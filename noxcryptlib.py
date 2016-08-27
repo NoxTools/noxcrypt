@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import argparse
 import blowfish
 import struct
 
@@ -74,29 +73,21 @@ types = {
     'save': 27,
 }
 
-parser = argparse.ArgumentParser(description='NoxCrypt tool')
-parser.add_argument('--type', '-t', choices=types, required=True)
-parser.add_argument('--encrypt', '-e', action='store_true')
-parser.add_argument('--output', '-o', required=True)
-parser.add_argument('input')
-args = parser.parse_args()
+def noxcrypt(inp, outp, type_string, encrypt=False):
+    idx = types[type_string]
+    def idx_to_key_bytes(idx):
+        return b''.join([struct.pack('<I', keys[x]) for x in range(7 * idx, 7 * idx + 14)])
 
-idx = types[args.type]
-def idx_to_key_bytes(idx):
-    return b''.join([struct.pack('<I', keys[x]) for x in range(7 * idx, 7 * idx + 14)])
-
-cipher = blowfish.Cipher(idx_to_key_bytes(idx))
-inp = open(args.input, 'rb')
-outp = open(args.output, 'wb')
-while True:
-    data = inp.read(4096)
-    if len(data) == 0:
-        break
-    if len(data) % 8 != 0:
-        print('Padding to 8-bytes')
-        data += b'\x00' * (8 - (len(data) % 8))
-    if args.encrypt:
-        blocks = cipher.encrypt_ecb(data)
-    else:
-        blocks = cipher.decrypt_ecb(data)
-    outp.write(b''.join(blocks))
+    cipher = blowfish.Cipher(idx_to_key_bytes(idx))
+    while True:
+        data = inp.read(4096)
+        if len(data) == 0:
+            break
+        if len(data) % 8 != 0:
+            print('Padding to 8-bytes')
+            data += b'\x00' * (8 - (len(data) % 8))
+        if encrypt:
+            blocks = cipher.encrypt_ecb(data)
+        else:
+            blocks = cipher.decrypt_ecb(data)
+        outp.write(b''.join(blocks))
